@@ -15,8 +15,8 @@
 #   limitations under the License.
 #
 
-# 2019 Modified by lnxdork for centos7.
-# TODO: Check CIS numbering and requirements for centos/RHEL 7
+# 2019 Modified by lnxdork for centos7 based on CIS CentOS Linux 7 Benchmark v2.2.0 - 12-27-2017
+# TODO: Check CIS numbering and requirements for centos/RHEL 7, currently at 1.2.3
 #       Create versions for centos/RHEL 8
 
 install
@@ -46,15 +46,17 @@ part swap --size=1024
 part pv.01 --size=1 --grow
 volgroup vg_root pv.01
 logvol / --vgname vg_root --name root --fstype=ext4 --size=10240
-# CIS 1.1.1-1.1.4
-logvol /tmp --vgname vg_root --name tmp --size=500 --fsoptions="nodev,nosuid,noexec"
-# CIS 1.1.5
+# CIS 1.1.2-1.1.5
+logvol /tmp --vgname vg_root --name tmp --size=500 --fsoptions="rw,nosuid,nodev,noexec,relatime"
+# CIS 1.1.6
 logvol /var --vgname vg_root --name var --size=500
-# CIS 1.1.7
+# CIS 1.1.7-1.1.10
+logvol /var/tmp --vgname vg_root --name var_tmp --size=500 --fsoptions="rw,nosuid,nodev,noexec,relatime"
+# CIS 1.1.11
 logvol /var/log --vgname vg_root --name log --size=1024
-# CIS 1.1.8
-logvol /var/log/audit --vgname vg_root --name audit --size=1024
-# CIS 1.1.9-1.1.0
+# CIS 1.1.12
+logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,relatime,data=ordered"
+# CIS 1.1.13-1.1.14
 logvol /home --vgname vg_root --name home --size=1024 --grow --fsoptions="nodev"
 
 # CIS 1.4.1, 5.2.3
@@ -89,11 +91,28 @@ pam_passwdqc                # CIS 6.3.3
 %post --log=/root/postinstall.log
 
 ###############################################################################
+# CIS 1.1.1.1
+echo "install cramfs /bin/true" >> /etc/modprobe.d/CIS.conf
+# CIS 1.1.1.2
+echo "install freevxfs /bin/true" >> /etc/modprobe.d/CIS.conf
+# CIS 1.1.1.3
+echo "install jffs2 /bin/true" >> /etc/modprobe.d/CIS.conf
+# CIS 1.1.1.4
+echo "install hfs /bin/true" >> /etc/modprobe.d/CIS.conf
+# CIS 1.1.1.5
+echo "install hfsplus /bin/true" >> /etc/modprobe.d/CIS.conf
+# CIS 1.1.1.6
+echo "install squashfs /bin/true" >> /etc/modprobe.d/CIS.conf
+# CIS 1.1.1.7
+echo "install udf /bin/true" >> /etc/modprobe.d/CIS.conf
+# CIS 1.1.1.7
+echo "install vfat /bin/true" >> /etc/modprobe.d/CIS.conf
+
 # /etc/fstab
 echo -e "\n# CIS Benchmark Adjustments" >> /etc/fstab
 # CIS 1.1.6
 echo "/tmp      /var/tmp    none    bind    0 0" >> /etc/fstab
-# CIS 1.1.14-1.1.16
+# CIS 1.1.15-1.1.17
 awk '$2~"^/dev/shm$"{$4="nodev,noexec,nosuid"}1' OFS="\t" /etc/fstab >> /tmp/fstab
 mv /tmp/fstab /etc/fstab
 restorecon -v /etc/fstab && chmod 644 /etc/fstab
@@ -286,5 +305,15 @@ sed -i 's/^PASS_WARN_AGE.*$/PASS_WARN_AGE 7/' /etc/login.defs
 echo "Authorized uses only. All activity may be monitored and reported." > /etc/motd
 echo "Authorized uses only. All activity may be monitored and reported." > /etc/issue
 echo "Authorized uses only. All activity may be monitored and reported." > /etc/issue.net
+
+# CIS 1.1.21
+df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
+# CIS 1.1.22
+systemctl disable autofs
+
+# CIS 1.2.3
+# Edit /etc/yum.conf and set ' gpgcheck=1 ' in the [main] section.
+sed -i 's/gpgcheck=.*$/gpgcheck=1' /etc/yum.conf
+# Edit any failing files in /etc/yum.repos.d/* and set all instances of gpgcheck to ' 1 '.
 
 %end
