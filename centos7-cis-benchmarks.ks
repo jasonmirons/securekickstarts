@@ -16,7 +16,7 @@
 #
 
 # 2019 Modified by lnxdork for centos7 based on CIS CentOS Linux 7 Benchmark v2.2.0 - 12-27-2017
-# TODO: Check CIS numbering and requirements for centos/RHEL 7, currently at 1.2.3
+# TODO: Check CIS numbering and requirements for centos/RHEL 7, currently at 1.4.2
 #       Create versions for centos/RHEL 8
 
 install
@@ -59,14 +59,25 @@ logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,
 # CIS 1.1.13-1.1.14
 logvol /home --vgname vg_root --name home --size=1024 --grow --fsoptions="nodev"
 
-# CIS 1.4.1, 5.2.3
+# CIS 1.4.1
+chown root:root /boot/grub2/grub.cfg
+chmod og-rwx /boot/grub2/grub.cfg
+chown root:root /boot/grub2/user.cfg
+chmod og-rwx /boot/grub2/user.cfg
+
+# CIS 1.4.2
+sed -i "/^CLASS=/s/ --unrestricted//" /etc/grub.d/10_linux
+#grub2-setpassword TODO
+#grub2-mkconfig -o /boot/grub2/grub.cfg TODO
+
+# CIS 5.2.3
 bootloader --location=mbr --driveorder=vda --append="selinux=1 audit=1"
 reboot
 
 %packages
 @core
 setroubleshoot-server
-aide                        # CIS 1.3.2
+aide                        # CIS 1.3.1
 selinux-policy-targeted     # CIS 1.4.3
 -setroubleshoot             # CIS 1.4.4
 -mcstrans                   # CIS 1.4.5
@@ -111,11 +122,20 @@ echo "install vfat /bin/true" >> /etc/modprobe.d/CIS.conf
 # /etc/fstab
 echo -e "\n# CIS Benchmark Adjustments" >> /etc/fstab
 # CIS 1.1.6
-echo "/tmp      /var/tmp    none    bind    0 0" >> /etc/fstab
+# echo "/tmp      /var/tmp    none    bind    0 0" >> /etc/fstab
+
 # CIS 1.1.15-1.1.17
 awk '$2~"^/dev/shm$"{$4="nodev,noexec,nosuid"}1' OFS="\t" /etc/fstab >> /tmp/fstab
 mv /tmp/fstab /etc/fstab
 restorecon -v /etc/fstab && chmod 644 /etc/fstab
+
+# CIS 1.2.3
+sed -i 's/gpgcheck=.*$/gpgcheck=1/' /etc/yum.conf
+sed -i 's/gpgcheck=.*$/gpgcheck=1/g' /etc/yum.repos.d/*
+
+# CIS 1.3.1
+aide --init
+mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
 
 # CIS 1.3.2
 echo "0 5 * * * /usr/sbin/aide --check" >> /var/spool/cron/root
@@ -310,10 +330,5 @@ echo "Authorized uses only. All activity may be monitored and reported." > /etc/
 df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
 # CIS 1.1.22
 systemctl disable autofs
-
-# CIS 1.2.3
-# Edit /etc/yum.conf and set ' gpgcheck=1 ' in the [main] section.
-sed -i 's/gpgcheck=.*$/gpgcheck=1' /etc/yum.conf
-# Edit any failing files in /etc/yum.repos.d/* and set all instances of gpgcheck to ' 1 '.
 
 %end
