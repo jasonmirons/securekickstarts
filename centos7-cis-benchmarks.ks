@@ -59,8 +59,6 @@ logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,
 # CIS 1.1.13-1.1.14
 logvol /home --vgname vg_root --name home --size=1024 --grow --fsoptions="nodev"
 
-# CIS 1.4.2
-sed -i "/^CLASS=/s/ --unrestricted//" /etc/grub.d/10_linux
 #grub2-setpassword TODO
 #grub2-mkconfig -o /boot/grub2/grub.cfg TODO
 
@@ -134,6 +132,9 @@ mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
 
 # CIS 1.3.2
 echo "0 5 * * * /usr/sbin/aide --check" >> /var/spool/cron/root
+
+# CIS 1.4.2
+sed -i "/^CLASS=/s/ --unrestricted//" /etc/grub.d/10_linux
 
 # CIS 1.5.5
 sed -i 's/^PROMPT=yes$/PROMPT=no/' /etc/sysconfig/init
