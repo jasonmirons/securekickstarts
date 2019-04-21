@@ -59,12 +59,6 @@ logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,
 # CIS 1.1.13-1.1.14
 logvol /home --vgname vg_root --name home --size=1024 --grow --fsoptions="nodev"
 
-# CIS 1.4.1
-chown root:root /boot/grub2/grub.cfg
-chmod og-rwx /boot/grub2/grub.cfg
-chown root:root /boot/grub2/user.cfg
-chmod og-rwx /boot/grub2/user.cfg
-
 # CIS 1.4.2
 sed -i "/^CLASS=/s/ --unrestricted//" /etc/grub.d/10_linux
 #grub2-setpassword TODO
@@ -331,5 +325,12 @@ echo "Authorized uses only. All activity may be monitored and reported." > /etc/
 df --local -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | xargs chmod a+t
 # CIS 1.1.22
 systemctl disable autofs
+
+# CIS 1.4.1
+chown root:root /boot/grub2/grub.cfg
+chmod og-rwx /boot/grub2/grub.cfg
+chown root:root /boot/grub2/user.cfg
+chmod og-rwx /boot/grub2/user.cfg
+
 
 %end
