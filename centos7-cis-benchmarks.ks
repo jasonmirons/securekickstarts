@@ -21,6 +21,8 @@
 #       grub2-mkconfig -o /boot/grub2/grub.cfg 1.4.2
 #       1.6.1.1
 #       1.6.1.6
+#       2.2.1.3
+#       2.2.15
 #       Create versions for centos/RHEL 8
 
 install
@@ -87,8 +89,11 @@ selinux-policy-targeted     # CIS 1.6.1.3
 -talk-server                # CIS 2.1.10
 -xinetd                     # CIS 2.1.11
 # -@"X Window System"         # CIS 3.2
+-xorg-x11*                  # CIS 2.2.2
+-avahi-daemon               # CIS 2.2.3
 -dhcp                       # CIS 3.5
-ntp                         # CIS 3.6 chrony
+-ntp                         # CIS 2.2.1.1 
+chrony                      # CIS 2.2.1.1 
 postfix                     # CIS 3.16
 rsyslog                     # CIS 5.1.2
 cronie-anacron              # CIS 6.1.1
@@ -176,6 +181,25 @@ net.ipv4.tcp_syncookies = 1                             # CIS 4.2.8
 EOF
 
 ###############################################################################
+# /etc/dconf/profile/gdm
+cat << 'EOF' >> /etc/dconf/profile/gdm
+
+# CIS Benchmark Adjustments CIS 1.7.2
+user-db:user
+system-db:gdm
+file-db:/usr/share/gdm/greeter-dconf-defaults
+EOF
+
+# /etc/dconf/db/gdm.d/01-banner-message
+cat << 'EOF' >> /etc/dconf/db/gdm.d/01-banner-message
+
+# CIS Benchmark Adjustments CIS 1.7.2
+[org/gnome/login-screen]
+banner-message-enable=true
+banner-message-text='Authorized uses only. All activity may be monitored and
+reported.'
+EOF
+
 # /etc/audit/audit.rules
 cat << 'EOF' >> /etc/audit/audit.rules
 
@@ -260,29 +284,60 @@ find PART -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print "-a alway
 echo -e "\n# CIS 5.2.18"
 echo "-e 2" >> /etc/audit/audit.rules
 
-# CIS 2.1.12
+# CIS 2.1.1
 chkconfig chargen-dgram off
-# CIS 2.1.13
 chkconfig chargen-stream off
-# CIS 2.1.14
+# CIS 2.1.2
 chkconfig daytime-dgram off
-# CIS 2.1.15
 chkconfig daytime-stream off
-# CIS 2.1.16
+# CIS 2.1.3
+chkconfig discard-dgram off
+chkconfig discard-stream off
+# CIS 2.1.4
 chkconfig echo-dgram off
-# CIS 2.1.17
 chkconfig echo-stream off
+# CIS 2.1.5
+chkconfig time-dgram off
+chkconfig time-stream off
+# CIS 2.1.6
+chkconfig tftp off
+# CIS 2.1.7
+systemctl disable xinetd
+
 # CIS 2.1.18
 chkconfig tcpmux-server off
+
+# CIS 2.2.3
+systemctl disable avahi-daemon
 
 # CIS 3.1
 echo "\n# CIS Benchmarks" 
 echo "umask 027" >> /etc/sysconfig/init
 
-# CIS 3.3
-chkconfig avahi-daemon off
-# CIS 3.4
-chkconfig cups off
+# CIS 2.2.4
+systemctl disable cups
+# CIS 2.2.5
+systemctl is-enabled dhcpd
+# CIS 2.2.6
+systemctl disable slapd
+# CIS 2.2.7
+systemctl disable nfs
+systemctl disable nfs-server
+systemctl disable rpcbind
+# CIS 2.2.8
+systemctl disable named
+# CIS 2.2.9
+systemctl disable vsftpd
+# CIS 2.2.10
+systemctl disable httpd
+# CIS 2.2.11
+systemctl disable dovecot
+# CIS 2.2.12
+systemctl disable sm
+# CIS 2.2.13
+systemctl disable squid
+# CIS 2.2.14
+systemctl disable snmpd
 # CIS 3.6 (ntp.conf defaults meet requirements)
 chkconfig ntpd on
 # CIS 3.16 (postfix defaults meet requirements)
@@ -343,5 +398,8 @@ chown root:root /boot/grub2/grub.cfg
 chmod og-rwx /boot/grub2/grub.cfg
 chown root:root /boot/grub2/user.cfg
 chmod og-rwx /boot/grub2/user.cfg
+
+# CIS 1.8
+yum update --security
 
 %end
