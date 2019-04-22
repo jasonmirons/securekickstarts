@@ -79,14 +79,15 @@ selinux-policy-targeted     # CIS 1.6.1.3
 -mcstrans                   # CIS 1.6.1.5
 -prelink                    # CIS 1.5.4 <-
 -telnet-server              # CIS 2.1.1
--telnet                     # CIS 2.1.2
+-telnet                     # CIS 2.3.4
 -rsh-server                 # CIS 2.1.3
--rsh                        # CIS 2.1.4
--ypbind                     # CIS 2.1.5
+-rsh                        # CIS 2.3.2
+-ypbind                     # CIS 2.3.1
 -ypserv                     # CIS 2.1.6
 -tftp                       # CIS 2.1.7
 -tftp-server                # CIS 2.1.8
--talk-server                # CIS 2.1.10
+-talk-server                # CIS 2.3.3
+-openldap-clients           # CIS 2.3.5
 -xinetd                     # CIS 2.1.11
 # -@"X Window System"         # CIS 3.2
 -xorg-x11*                  # CIS 2.2.2
@@ -338,6 +339,21 @@ systemctl disable sm
 systemctl disable squid
 # CIS 2.2.14
 systemctl disable snmpd
+# CIS 2.2.16
+systemctl disable ypserv
+# CIS 2.2.17
+systemctl disable rsh.socket
+systemctl disable rlogin.socket
+systemctl disable rexec.socket
+# CIS 2.2.18
+systemctl disable telnet.socket
+# CIS 2.2.19
+systemctl disable tftp.socket
+# CIS 2.2.20
+systemctl disable rsyncd
+# CIS 2.2.22
+systemctl disable ntalk
+
 # CIS 3.6 (ntp.conf defaults meet requirements)
 chkconfig ntpd on
 # CIS 3.16 (postfix defaults meet requirements)
