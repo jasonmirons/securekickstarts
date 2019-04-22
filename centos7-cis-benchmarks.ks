@@ -16,7 +16,11 @@
 #
 
 # 2019 Modified by lnxdork for centos7 based on CIS CentOS Linux 7 Benchmark v2.2.0 - 12-27-2017
-# TODO: Check CIS numbering and requirements for centos/RHEL 7, currently at 1.4.2
+# TODO: Check CIS numbering and requirements for centos/RHEL 7
+#       grub2-setpassword 1.4.2
+#       grub2-mkconfig -o /boot/grub2/grub.cfg 1.4.2
+#       1.6.1.1
+#       1.6.1.6
 #       Create versions for centos/RHEL 8
 
 install
@@ -33,7 +37,7 @@ firewall --enabled --ssh
 # CIS 6.3.1
 authconfig --enableshadow --passalgo=sha512
 
-# CIS 1.4.2-1.4.3 (targeted is enabled by default w/enforcing)
+# CIS 1.6.1.2 - 1.6.1.3(targeted is enabled by default w/enforcing)
 selinux --enforcing
 
 timezone --utc America/Chicago
@@ -59,8 +63,6 @@ logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,
 # CIS 1.1.13-1.1.14
 logvol /home --vgname vg_root --name home --size=1024 --grow --fsoptions="nodev"
 
-#grub2-setpassword TODO
-#grub2-mkconfig -o /boot/grub2/grub.cfg TODO
 
 # CIS 5.2.3
 bootloader --location=mbr --driveorder=vda --append="selinux=1 audit=1"
@@ -70,9 +72,10 @@ reboot
 @core
 setroubleshoot-server
 aide                        # CIS 1.3.1
-selinux-policy-targeted     # CIS 1.4.3
--setroubleshoot             # CIS 1.4.4
--mcstrans                   # CIS 1.4.5
+selinux-policy-targeted     # CIS 1.6.1.3
+-setroubleshoot             # CIS 1.6.1.4
+-mcstrans                   # CIS 1.6.1.5
+-prelink                    # CIS 1.5.4 <-
 -telnet-server              # CIS 2.1.1
 -telnet                     # CIS 2.1.2
 -rsh-server                 # CIS 2.1.3
@@ -83,13 +86,13 @@ selinux-policy-targeted     # CIS 1.4.3
 -tftp-server                # CIS 2.1.8
 -talk-server                # CIS 2.1.10
 -xinetd                     # CIS 2.1.11
--@"X Window System"         # CIS 3.2
+# -@"X Window System"         # CIS 3.2
 -dhcp                       # CIS 3.5
-ntp                         # CIS 3.6
+ntp                         # CIS 3.6 chrony
 postfix                     # CIS 3.16
 rsyslog                     # CIS 5.1.2
 cronie-anacron              # CIS 6.1.1
-pam_passwdqc                # CIS 6.3.3
+# pam_passwdqc                # CIS 6.3.3
 %end
 
 %post --log=/root/postinstall.log
@@ -136,6 +139,13 @@ echo "0 5 * * * /usr/sbin/aide --check" >> /var/spool/cron/root
 # CIS 1.4.2
 sed -i "/^CLASS=/s/ --unrestricted//" /etc/grub.d/10_linux
 
+# CIS 1.4.3
+ExecStart=-/bin/sh -c "/sbin/sulogin; /usr/bin/systemctl --fail --no-blockdefault"
+
+# CIS 1.5.1
+echo "* hard core 0" >> /etc/security/limits.conf
+sysctl -w fs.suid_dumpable=0
+
 # CIS 1.5.5
 sed -i 's/^PROMPT=yes$/PROMPT=no/' /etc/sysconfig/init
 
@@ -144,8 +154,9 @@ sed -i 's/^PROMPT=yes$/PROMPT=no/' /etc/sysconfig/init
 cat << 'EOF' >> /etc/sysctl.conf
 
 # CIS Benchmark Adjustments
+fs.suid_dumpable = 0                                    # CIS 1.5.1
 kernel.exec-shield = 1                                  # CIS 1.6.2
-kernel.randomize_va_space = 2                           # CIS 1.6.3
+kernel.randomize_va_space = 2                           # CIS 1.5.3
 net.ipv4.ip_forward = 0                                 # CIS 4.1.1
 net.ipv4.conf.all.send_redirects = 0                    # CIS 4.1.2
 net.ipv4.conf.default.send_redirects = 0                # CIS 4.1.2
@@ -317,7 +328,7 @@ sed -i 's/^PASS_MAX_DAYS.*$/PASS_MAX_DAYS 90/' /etc/login.defs
 sed -i 's/^PASS_MIN_DAYS.*$/PASS_MIN_DAYS 7/' /etc/login.defs
 sed -i 's/^PASS_WARN_AGE.*$/PASS_WARN_AGE 7/' /etc/login.defs
 
-# CIS 8.1
+# CIS 1.7.1.1-1.7.1.6
 echo "Authorized uses only. All activity may be monitored and reported." > /etc/motd
 echo "Authorized uses only. All activity may be monitored and reported." > /etc/issue
 echo "Authorized uses only. All activity may be monitored and reported." > /etc/issue.net
@@ -332,6 +343,5 @@ chown root:root /boot/grub2/grub.cfg
 chmod og-rwx /boot/grub2/grub.cfg
 chown root:root /boot/grub2/user.cfg
 chmod og-rwx /boot/grub2/user.cfg
-
 
 %end
