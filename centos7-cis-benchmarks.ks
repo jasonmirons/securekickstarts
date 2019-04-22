@@ -51,7 +51,7 @@ part /boot --fstype=xfs --size=250
 part swap --size=1024
 part pv.01 --size=1 --grow
 volgroup vg_root pv.01
-logvol / --vgname vg_root --name root --fstype=fxs --size=10240
+logvol / --vgname vg_root --name root --fstype=xfs --size=10240
 # CIS 1.1.2-1.1.5
 logvol /tmp --vgname vg_root --name tmp --size=500 --fsoptions="rw,nosuid,nodev,noexec,relatime"
 # CIS 1.1.6
