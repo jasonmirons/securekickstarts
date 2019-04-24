@@ -23,6 +23,8 @@
 #       1.6.1.6
 #       2.2.1.3
 #       2.2.15
+#       3.4.2
+#       4.1.3
 #       Create versions for centos/RHEL 8
 
 install
@@ -89,16 +91,18 @@ selinux-policy-targeted     # CIS 1.6.1.3
 -talk-server                # CIS 2.3.3
 -openldap-clients           # CIS 2.3.5
 -xinetd                     # CIS 2.1.11
-# -@"X Window System"         # CIS 3.2
+# -@"X Window System"       # CIS 3.2
 -xorg-x11*                  # CIS 2.2.2
 -avahi-daemon               # CIS 2.2.3
 -dhcp                       # CIS 3.5
--ntp                         # CIS 2.2.1.1 
+-ntp                        # CIS 2.2.1.1 
 chrony                      # CIS 2.2.1.1 
 postfix                     # CIS 3.16
 rsyslog                     # CIS 5.1.2
 cronie-anacron              # CIS 6.1.1
-# pam_passwdqc                # CIS 6.3.3
+tcp_wrappers                # CIS 3.4
+iptables                    # CIS 3.6.1
+# pam_passwdqc              # CIS 6.3.3
 %end
 
 %post --log=/root/postinstall.log
@@ -163,22 +167,22 @@ cat << 'EOF' >> /etc/sysctl.conf
 fs.suid_dumpable = 0                                    # CIS 1.5.1
 kernel.exec-shield = 1                                  # CIS 1.6.2
 kernel.randomize_va_space = 2                           # CIS 1.5.3
-net.ipv4.ip_forward = 0                                 # CIS 4.1.1
-net.ipv4.conf.all.send_redirects = 0                    # CIS 4.1.2
-net.ipv4.conf.default.send_redirects = 0                # CIS 4.1.2
-net.ipv4.conf.all.accept_source_route = 0               # CIS 4.2.1
-net.ipv4.conf.default.accept_source_route = 0           # CIS 4.2.1
-net.ipv4.conf.all.accept_redirects = 0                  # CIS 4.2.2
-net.ipv4.conf.default.accept_redirects = 0              # CIS 4.2.2
-net.ipv4.conf.all.secure_redirects = 0                  # CIS 4.2.3
-net.ipv4.conf.default.secure_redirects = 0              # CIS 4.2.3
-net.ipv4.conf.all.log_martians = 1                      # CIS 4.2.4
-net.ipv4.conf.default.log_martians = 1                  # CIS 4.2.4
-net.ipv4.icmp_echo_ignore_broadcasts = 1                # CIS 4.2.5
-net.ipv4.icmp_ignore_bogus_error_responses = 1          # CIS 4.2.6
-net.ipv4.conf.all.rp_filter = 1                         # CIS 4.2.7
-net.ipv4.conf.default.rp_filter = 1                     # CIS 4.2.7
-net.ipv4.tcp_syncookies = 1                             # CIS 4.2.8
+net.ipv4.ip_forward = 0                                 # CIS 3.1.1
+net.ipv4.conf.all.send_redirects = 0                    # CIS 3.1.2
+net.ipv4.conf.default.send_redirects = 0                # CIS 3.1.2
+net.ipv4.conf.all.accept_source_route = 0               # CIS 3.2.1
+net.ipv4.conf.default.accept_source_route = 0           # CIS 3.2.1
+net.ipv4.conf.all.accept_redirects = 0                  # CIS 3.2.2
+net.ipv4.conf.default.accept_redirects = 0              # CIS 3.2.2
+net.ipv4.conf.all.secure_redirects = 0                  # CIS 3.2.3
+net.ipv4.conf.default.secure_redirects = 0              # CIS 3.2.3
+net.ipv4.conf.all.log_martians = 1                      # CIS 3.2.4
+net.ipv4.conf.default.log_martians = 1                  # CIS 3.2.4
+net.ipv4.icmp_echo_ignore_broadcasts = 1                # CIS 3.2.5
+net.ipv4.icmp_ignore_bogus_error_responses = 1          # CIS 3.2.6
+net.ipv4.conf.all.rp_filter = 1                         # CIS 3.2.7
+net.ipv4.conf.default.rp_filter = 1                     # CIS 3.2.7
+net.ipv4.tcp_syncookies = 1                             # CIS 3.2.8
 EOF
 
 ###############################################################################
@@ -199,6 +203,20 @@ cat << 'EOF' >> /etc/dconf/db/gdm.d/01-banner-message
 banner-message-enable=true
 banner-message-text='Authorized uses only. All activity may be monitored and
 reported.'
+EOF
+
+# /etc/audit/audit.conf
+cat << 'EOF' >> /etc/audit/audit.conf
+
+# CIS Benchmark Adjustments
+
+# CIS 4.1.1.2
+space_left_action = email
+action_mail_acct = root
+admin_space_left_action = halt
+
+# CIS 4.1.1.3
+max_log_file_action = keep_logs
 EOF
 
 # /etc/audit/audit.rules
@@ -354,6 +372,9 @@ systemctl disable rsyncd
 # CIS 2.2.22
 systemctl disable ntalk
 
+# CIS 4.1.2
+systemctl enable auditd
+
 # CIS 3.6 (ntp.conf defaults meet requirements)
 chkconfig ntpd on
 # CIS 3.16 (postfix defaults meet requirements)
@@ -362,10 +383,38 @@ alternatives --set mta /usr/sbin/sendmail.postfix
 chkconfig postfix on
 # CIS 5.1.3
 chkconfig syslog off && chkconfig rsyslog on
-# CIS 5.2.2
-chkconfig auditd on
+
 # CIS 6.1.2
 chkconfig crond on
+
+# CIS 3.4.2
+echo "# ALL: <net>/<mask>, <net>/<mask>, ..." >>/etc/hosts.allow
+# CIS 3.4.3
+echo "ALL: ALL" >> /etc/hosts.deny
+# CIS 3.4.4
+chown root:root /etc/hosts.allow
+chmod 644 /etc/hosts.allow
+# CIS 3.4.5
+chown root:root /etc/hosts.deny
+chmod 644 /etc/hosts.deny
+
+# CIS 3.6.2
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+# CIS 3.6.3
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+iptables -A INPUT -s 127.0.0.0/8 -j DROP
+# CIS 3.6.4
+iptables -A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A INPUT -p tcp -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -p udp -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT
+# CIS 3.6.5
+iptables -A INPUT -p <protocol> --dport <port> -m state --state NEW -j ACCEPT
 
 # CIS 6.2.4
 sed -i 's/^#X11Forwarding no$/X11Forwarding no/' /etc/ssh/sshd_config
