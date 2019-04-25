@@ -63,7 +63,8 @@ logvol /var/tmp --vgname vg_root --name var_tmp --size=500 --fsoptions="rw,nosui
 # CIS 1.1.11
 logvol /var/log --vgname vg_root --name log --size=1024
 # CIS 1.1.12
-logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,relatime,data=ordered"
+#logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,relatime,data=ordered"
+logvol /var/log/audit --vgname vg_root --name audit --size=1024 --fsoptions="rw,relatime"
 # CIS 1.1.13-1.1.14
 logvol /home --vgname vg_root --name home --size=1024 --grow --fsoptions="nodev"
 
