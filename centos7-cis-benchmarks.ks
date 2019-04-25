@@ -98,7 +98,8 @@ selinux-policy-targeted     # CIS 1.6.1.3
 -ntp                        # CIS 2.2.1.1 
 chrony                      # CIS 2.2.1.1 
 postfix                     # CIS 3.16
-rsyslog                     # CIS 5.1.2
+syslog-ng                   # CIS 4.2.3
+rsyslog                     # CIS 4.2.3
 cronie-anacron              # CIS 6.1.1
 tcp_wrappers                # CIS 3.4
 iptables                    # CIS 3.6.1
@@ -268,39 +269,39 @@ cat << 'EOF' >> /etc/audit/audit.rules
 -a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod
 -a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod
 
-# CIS 5.2.11
--a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=500 -F auid!=4294967295 -k access
--a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=500 -F auid!=4294967295 -k access
--a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=500 -F auid!=4294967295 -k access
--a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=500 -F auid!=4294967295 -k access
+# CIS 4.1.11
+-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access
+-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access
+-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access
+-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access
 
-# CIS 5.2.13
--a always,exit -F arch=b64 -S mount -F auid>=500 -F auid!=4294967295 -k mounts
--a always,exit -F arch=b32 -S mount -F auid>=500 -F auid!=4294967295 -k mounts
+# CIS 4.1.13
+-a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts
+-a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts
 
-# CIS 5.2.14
--a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=500 -F auid!=4294967295 -k delete
--a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=500 -F auid!=4294967295 -k delete
+# CIS 4.1.14
+-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete
+-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete
 
-# CIS 5.2.15
+# CIS 4.1.15
 -w /etc/sudoers -p wa -k scope
+-w /etc/sudoers.d/ -p wa -k scope
 
-# CIS 5.2.16
+# CIS 4.1.16
 -w /var/log/sudo.log -p wa -k actions
 
-# CIS 5.2.17
+# CIS 4.1.17
 -w /sbin/insmod -p x -k modules
 -w /sbin/rmmod -p x -k modules
 -w /sbin/modprobe -p x -k modules
 -a always,exit -F arch=b64 -S init_module -S delete_module -k modules
--a always,exit -F arch=b32 -S init_module -S delete_module -k modules
 EOF
 
-# CIS 5.2.12
+# CIS 4.1.12
 echo -e "\n# CIS 5.2.12" >> /etc/audit/audit.rules
-find PART -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print "-a always,exit -F path=" $1 " -F perm=x -F auid>=500 -F auid!=4294967295 -k privileged" }' >> /etc/audit/audit.rules
+find PART -xdev \( -perm -4000 -o -perm -2000 \) -type f | awk '{print "-a always,exit -F path=" $1 " -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged" }' >> /etc/audit/audit.rules
 
-# CIS 5.2.18
+# CIS 4.1.18
 echo -e "\n# CIS 5.2.18"
 echo "-e 2" >> /etc/audit/audit.rules
 
@@ -382,11 +383,67 @@ chkconfig ntpd on
 chkconfig sendmail off
 alternatives --set mta /usr/sbin/sendmail.postfix
 chkconfig postfix on
-# CIS 5.1.3
-chkconfig syslog off && chkconfig rsyslog on
 
-# CIS 6.1.2
-chkconfig crond on
+# CIS 4.2.1
+systemctl enable rsyslog
+
+# CIS 4.2.1.3
+sed -i 's/^\$FileCreateMode.*$/$FileCreateMode 0640/' /etc/rsyslog.conf
+sed -i 's/^\$FileCreateMode.*$/$FileCreateMode 0640/g' /etc/rsyslog.d/*.conf
+
+# CIS 4.2.1.4
+echo "*.* @@loghost.example.com" >> /etc/rsyslog.conf
+echo "*.* @@loghost.example.com" >> /etc/rsyslog.d/*.conf
+
+# CIS 4.2.2
+systemctl enable syslog-ng
+
+# CIS 4.2.2.3
+echo "options { chain_hostnames(off); flush_lines(0); perm(0640); stats_freq(3600); threaded(yes); };" >> /etc/syslog-ng/syslog-ng.conf
+
+# CIS 4.2.4
+find /var/log -type f -exec chmod g-wx,o-rwx {} +
+
+# CIS 5.1.1
+systemctl enable crond
+
+# CIS 5.1.2
+chown root:root /etc/crontab
+chmod og-rwx /etc/crontab
+
+# CIS 5.1.3
+chown root:root /etc/cron.hourly
+chmod og-rwx /etc/cron.hourly
+
+# CIS 5.1.4
+chown root:root /etc/cron.daily
+chmod og-rwx /etc/cron.daily
+
+# CIS 5.1.5
+chown root:root /etc/cron.weekly
+chmod og-rwx /etc/cron.weekly
+
+# CIS 5.1.6
+chown root:root /etc/cron.monthly
+chmod og-rwx /etc/cron.monthly
+
+# CIS 5.1.7
+chown root:root /etc/cron.d
+chmod og-rwx /etc/cron.d
+
+# CIS 5.1.8
+rm /etc/cron.deny
+rm /etc/at.deny
+touch /etc/cron.allow
+touch /etc/at.allow
+chmod og-rwx /etc/cron.allow
+chmod og-rwx /etc/at.allow
+chown root:root /etc/cron.allow
+chown root:root /etc/at.allow
+
+# CIS 5.2.1
+chown root:root /etc/ssh/sshd_config
+chmod og-rwx /etc/ssh/sshd_config
 
 # CIS 3.4.2
 echo "# ALL: <net>/<mask>, <net>/<mask>, ..." >>/etc/hosts.allow
@@ -417,26 +474,51 @@ iptables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT
 # CIS 3.6.5
 iptables -A INPUT -p <protocol> --dport <port> -m state --state NEW -j ACCEPT
 
-# CIS 6.2.4
+# CIS 5.2.2
+sed -i 's/Protocol.*$/Protocol 2/' /etc/ssh/sshd_config
+# CIS 5.2.3
+sed -i 's/LogLevel.*$/LogLevel INFO/' /etc/ssh/sshd_config
+# CIS 5.2.4
 sed -i 's/^#X11Forwarding no$/X11Forwarding no/' /etc/ssh/sshd_config
 sed -i '/^X11Forwarding yes$/d' /etc/ssh/sshd_config
-# CIS 6.2.5
+# CIS 5.2.5
 sed -i 's/^.*MaxAuthTries.*$/MaxAuthTries 4/' /etc/ssh/sshd_config
-# CIS 6.2.8
+# CIS 5.2.6
+sed -i 's/^.*IgnoreRhosts.*$/IgnoreRhosts yes/' /etc/ssh/sshd_config
+# CIS 5.2.7
+sed -i 's/^.*HostbasedAuthentication.*$/HostbasedAuthentication no' /etc/ssh/sshd_config
+# CIS 5.2.8
 sed -i 's/^#PermitRootLogin.*$/PermitRootLogin no/' /etc/ssh/sshd_config
-# CIS 6.2.11
+# CIS 5.2.9
+sed -i 's/^#PermitEmptyPasswords.*$/PermitEmptyPasswords no' /etc/ssh/sshd_config
+# CIS 5.2.10
+sed -i 's/^#PermitUserEnvironment.*$/PermitUserEnvironment no' /etc/ssh/sshd_config
+# CIS 5.2.11
 echo -e "\n# CIS Benchmarks\n# CIS 6.2.12" >> /etc/ssh/sshd_config
-echo "Ciphers aes128-ctr,aes192-ctr,aes256-ctr" >> /etc/ssh/sshd_config 
-# CIS 6.2.12
+echo "MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com" >> /etc/ssh/sshd_config
+# CIS 5.2.12
 sed -i 's/^.*ClientAliveInterval.*$/ClientAliveInterval 300/' /etc/ssh/sshd_config
 sed -i 's/^.*ClientAliveCountMax.*$/ClientAliveCountMax 0/' /etc/ssh/sshd_config
-# CIS 6.2.14
+# CIS 5.2.13
+sed -i 's/^.*LoginGraceTime.*$/LoginGraceTime 60/' /etc/ssh/sshd_config
+# CIS 5.2.14
+echo "AllowUsers <userlist>" >> /etc/ssh/sshd_config
+echo "AllowGroups <grouplist>" >> /etc/ssh/sshd_config
+echo "DenyUsers <userlist>" >> /etc/ssh/sshd_config
+echo "DenyGroups <grouplist>" >> /etc/ssh/sshd_config
+# CIS 5.2.15
 echo "Unauthorized access is prohibited." > /etc/ssh/sshd_banner
 echo -e "\n# CIS 6.2.14" >> /etc/ssh/sshd_config
 echo "Banner /etc/ssh/sshd_banner" >> /etc/ssh/sshd_config 
 
-# CIS 6.3.2
-sed -i 's/password.+requisite.+pam_cracklib.so/password required pam_cracklib.so try_first_pass retry=3 minlen=14,dcredit=-1,ucredit=-1,ocredit=-1 lcredit=-1/' /etc/pam.d/system-auth
+# CIS 5.3.1
+sed -i 's/password.+requisite.+pam_cracklib.so/password required pam_cracklib.so try_first_pass retry=3' /etc/pam.d/system-auth
+echo"minlen = 14" >> /etc/security/pwquality.conf
+echo"dcredit = -1" >> /etc/security/pwquality.conf
+echo"ucredit = -1" >> /etc/security/pwquality.conf
+echo"ocredit = -1" >> /etc/security/pwquality.conf
+echo"lcredit = -1" >> /etc/security/pwquality.conf
+
 # CIS 6.3.3
 sed -i -e '/pam_cracklib.so/{:a;n;/^$/!ba;i\password    requisite     pam_passwdqc.so min=disabled,disabled,16,12,8' -e '}' /etc/pam.d/system-auth
 # CIS 6.3.6
