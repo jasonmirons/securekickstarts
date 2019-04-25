@@ -98,7 +98,7 @@ selinux-policy-targeted     # CIS 1.6.1.3
 -ntp                        # CIS 2.2.1.1 
 chrony                      # CIS 2.2.1.1 
 postfix                     # CIS 3.16
-syslog-ng                   # CIS 4.2.3
+# syslog-ng                   # CIS 4.2.3
 rsyslog                     # CIS 4.2.3
 cronie-anacron              # CIS 6.1.1
 tcp_wrappers                # CIS 3.4
