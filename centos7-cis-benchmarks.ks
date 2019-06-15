@@ -51,7 +51,7 @@ zerombr
 clearpart --all
 part /boot --fstype=xfs --size=250
 part swap --size=1024
-part pv.01 --size=1 --grow
+part pv.01 --size=1 --grow --encrypted
 volgroup vg_root pv.01
 logvol / --vgname vg_root --name root --fstype=xfs --size=10240
 # CIS 1.1.2-1.1.5
