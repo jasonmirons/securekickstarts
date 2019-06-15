@@ -105,6 +105,7 @@ cronie-anacron              # CIS 6.1.1
 tcp_wrappers                # CIS 3.4
 iptables                    # CIS 3.6.1
 # pam_passwdqc              # CIS 6.3.3
+clevis
 %end
 
 %post --log=/root/postinstall.log
