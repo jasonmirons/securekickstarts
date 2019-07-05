@@ -51,6 +51,7 @@ zerombr
 clearpart --all
 part /boot --fstype=xfs --size=250
 part swap --size=1024
+# LUKS encrypt the root volume, it will prompt for password on install.
 part pv.01 --size=1 --grow --encrypted
 volgroup vg_root pv.01
 logvol / --vgname vg_root --name root --fstype=xfs --size=10240
@@ -105,7 +106,8 @@ cronie-anacron              # CIS 6.1.1
 tcp_wrappers                # CIS 3.4
 iptables                    # CIS 3.6.1
 # pam_passwdqc              # CIS 6.3.3
-clevis
+clevis                      # Optional, for FDE and pre-boot auth
+dig                         # Optional, for Lynis 
 %end
 
 %post --log=/root/postinstall.log
@@ -204,8 +206,7 @@ cat << 'EOF' >> /etc/dconf/db/gdm.d/01-banner-message
 # CIS Benchmark Adjustments CIS 1.7.2
 [org/gnome/login-screen]
 banner-message-enable=true
-banner-message-text='Authorized uses only. All activity may be monitored and
-reported.'
+banner-message-text='Authorized uses only. All activity may be monitored and reported.'
 EOF
 
 # /etc/audit/audit.conf
@@ -393,6 +394,21 @@ systemctl enable rsyslog
 sed -i 's/^\$FileCreateMode.*$/$FileCreateMode 0640/' /etc/rsyslog.conf
 sed -i 's/^\$FileCreateMode.*$/$FileCreateMode 0640/g' /etc/rsyslog.d/*.conf
 
+# Change the /etc/profile umask settings
+sed -i 's/umask.*$/umask 077/g' /etc/profile
+sed -i 's/umask.*$/umask 077/g' /etc/init.d/functions
+sed -i 's/umask.*$/umask 077/g' /etc/bashrc
+sed -i 's/umask.*$/umask 077/g' /etc/csh.cshrc
+
+# Set a timeout setting in /etc/profile
+cat << 'EOF' >> /etc/profile
+
+# Set an idle timeout
+TMOUT=300
+readonly TMOUT
+export TMOUT
+EOF
+
 # CIS 4.2.1.4
 echo "*.* @@loghost.example.com" >> /etc/rsyslog.conf
 echo "*.* @@loghost.example.com" >> /etc/rsyslog.d/*.conf
@@ -532,6 +548,9 @@ sed -i 's/^#\(auth.*required.*pam_wheel.so.*\)$/\1/' /etc/pam.d/su
 sed -i 's/^PASS_MAX_DAYS.*$/PASS_MAX_DAYS 90/' /etc/login.defs
 sed -i 's/^PASS_MIN_DAYS.*$/PASS_MIN_DAYS 7/' /etc/login.defs
 sed -i 's/^PASS_WARN_AGE.*$/PASS_WARN_AGE 7/' /etc/login.defs
+
+# Enable logging failed logins
+echo "FAILLOG_ENAB yes" >> /etc/login.defs
 
 # CIS 1.7.1.1-1.7.1.6
 echo "Authorized uses only. All activity may be monitored and reported." > /etc/motd
