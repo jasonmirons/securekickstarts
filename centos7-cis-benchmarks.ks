@@ -107,7 +107,7 @@ tcp_wrappers                # CIS 3.4
 iptables                    # CIS 3.6.1
 # pam_passwdqc              # CIS 6.3.3
 clevis                      # Optional, for FDE and pre-boot auth
-dig                         # Optional, for Lynis 
+# dig                         # Optional, for Lynis 
 %end
 
 %post --log=/root/postinstall.log
